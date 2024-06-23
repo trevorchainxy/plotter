@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plotter</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+      body,
+      html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background-color: #121212;
+        color: #ffffff;
+      }
+      .button-container {
+        padding: 10px;
+        text-align: center;
+        background-color: #1e1e1e;
+      }
+      button {
+        margin-right: 10px;
+        background-color: #333333;
+        color: #ffffff;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #4a4a4a;
+      }
+      #map {
+        flex-grow: 1;
+        width: 100%;
+      }
+      .leaflet-container {
+        background: #121212;
+      }
+      .leaflet-tile-pane {
+        filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+      }
+      .leaflet-control-attribution {
+        background: rgba(0, 0, 0, 0.5) !important;
+        color: #999 !important;
+      }
+      .leaflet-control-zoom a {
+        background-color: #333333 !important;
+        color: #ffffff !important;
+        border: 1px solid #444444 !important;
+      }
+      .leaflet-control-zoom a:hover {
+        background-color: #4a4a4a !important;
+      }
+      .leaflet-bar {
+        border: 1px solid #444444 !important;
+      }
+      .custom-div-icon {
+        background: none;
+        border: none;
+      }
+      .marker-pin {
+        width: 30px;
+        height: 30px;
+        border-radius: 50% 50% 50% 0;
+        background: #4287f5;
+        position: absolute;
+        transform: rotate(-45deg);
+        left: 50%;
+        top: 50%;
+        margin: -15px 0 0 -15px;
+      }
+      .marker-pin::after {
+        content: "";
+        width: 24px;
+        height: 24px;
+        margin: 3px 0 0 3px;
+        background: #121212;
+        position: absolute;
+        border-radius: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="button-container">
+      <input type="file" id="fileInput" accept=".csv" style="display: none" />
+      <button onclick="document.getElementById('fileInput').click()">
+        Import
+      </button>
+      <button onclick="exportCSV()">Export</button>
+      <button onclick="resetMap()">Reset</button>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      let map;
+      let markers = [];
+
+      function initMap() {
+        map = L.map("map", {
+          center: [0, 0],
+          zoom: 2,
+          preferCanvas: true,
+        });
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+          maxZoom: 19,
+          className: "dark-tiles",
+        }).addTo(map);
+
+        map.on("click", addMarker);
+        map.on("contextmenu", function (e) {
+          removeMarker(e);
+          L.DomEvent.preventDefault(e);
+        });
+
+        document
+          .getElementById("fileInput")
+          .addEventListener("change", importCSV);
+      }
+
+      function addMarker(e) {
+        let marker = L.marker(e.latlng, {
+          icon: L.divIcon({
+            className: "custom-div-icon",
+            html: "<div style='background-color:#4287f5;' class='marker-pin'></div>",
+            iconSize: [30, 42],
+            iconAnchor: [15, 42],
+          }),
+        }).addTo(map);
+        markers.push(marker);
+      }
+
+      function removeMarker(e) {
+        const clickedPoint = map.latLngToLayerPoint(e.latlng);
+        const radius = 20;
+
+        for (let i = markers.length - 1; i >= 0; i--) {
+          const markerPoint = map.latLngToLayerPoint(markers[i].getLatLng());
+          const distance = clickedPoint.distanceTo(markerPoint);
+
+          if (distance <= radius) {
+            map.removeLayer(markers[i]);
+            markers.splice(i, 1);
+            return;
+          }
+        }
+      }
+
+      function resetMap() {
+        markers.forEach((marker) => map.removeLayer(marker));
+        markers = [];
+      }
+
+      function exportCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "lat,lng\n";
+        markers.forEach((marker) => {
+          let latlng = marker.getLatLng();
+          csvContent += `${latlng.lat},${latlng.lng}\n`;
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "coords.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      function importCSV(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const text = e.target.result;
+          const lines = text.split("\n");
+          lines.shift();
+          resetMap();
+          lines.forEach((line) => {
+            if (line.trim() !== "") {
+              const [lat, lng] = line.split(",").map(Number);
+              if (!isNaN(lat) && !isNaN(lng)) {
+                let marker = L.marker([lat, lng], {
+                  icon: L.divIcon({
+                    className: "custom-div-icon",
+                    html: "<div style='background-color:#4287f5;' class='marker-pin'></div>",
+                    iconSize: [30, 42],
+                    iconAnchor: [15, 42],
+                  }),
+                }).addTo(map);
+                markers.push(marker);
+              }
+            }
+          });
+          if (markers.length > 0) {
+            map.fitBounds(L.featureGroup(markers).getBounds());
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      initMap();
+    </script>
+  </body>
+</html>

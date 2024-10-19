@@ -55,28 +55,57 @@
       #resetButton {
         background-color: #f5424292;
       }
-      /* #infoBar { */
-      /* } */
+      .slider-table {
+        width: 25%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+      }
+      .slider-table td {
+        padding: 5px;
+        vertical-align: middle;
+      }
+      .slider-table td:first-child {
+        width: 120px;
+      }
+      .slider-table td:last-child {
+        width: 50px;
+        text-align: right;
+      }
+      .slider-table input[type="range"] {
+        width: 100%;
+      }
     </style>
   </head>
   <body>
     <div class="control-container">
-      <div>
-        <label for="radiusSlider">Radius (km):</label>
-        <input type="range" id="radiusSlider" min="0" max="500" value="100" />
-        <span id="radiusValue">100</span>
-      </div>
-      <div>
-        <label for="granularitySlider">Granularity (km):</label>
-        <input
-          type="range"
-          id="granularitySlider"
-          min="1"
-          max="500"
-          value="50"
-        />
-        <span id="granularityValue">50</span>
-      </div>
+      <table class="slider-table">
+        <tr>
+          <td><label for="radiusSlider">Radius (km):</label></td>
+          <td>
+            <input
+              type="range"
+              id="radiusSlider"
+              min="0"
+              max="500"
+              value="100"
+            />
+          </td>
+          <td><span id="radiusSliderValue">100</span></td>
+        </tr>
+        <tr>
+          <td><label for="granularitySlider">Granularity (km):</label></td>
+          <td>
+            <input
+              type="range"
+              id="granularitySlider"
+              min="1"
+              max="500"
+              value="50"
+            />
+          </td>
+          <td><span id="granularitySliderValue">50</span></td>
+        </tr>
+      </table>
       <input type="file" id="fileInput" accept=".csv" />
       <button onclick="exportCSV()">Export</button>
       <button id="resetButton" onclick="resetMap()">Reset</button>
@@ -106,16 +135,25 @@
         document
           .getElementById("fileInput")
           .addEventListener("change", importCSV);
+
         document
           .getElementById("radiusSlider")
-          .addEventListener("input", updateValue);
+          .addEventListener("input", function () {
+            updateValue("radiusSlider");
+          });
         document
           .getElementById("granularitySlider")
-          .addEventListener("input", updateValue);
+          .addEventListener("input", function () {
+            updateValue("granularitySlider");
+          });
       }
 
-      function updateValue() {
-        document.getElementById(this.id + "Value").textContent = this.value;
+      function updateValue(sliderId) {
+        const slider = document.getElementById(sliderId);
+        const valueSpan = document.getElementById(sliderId + "Value");
+        if (valueSpan) {
+          valueSpan.textContent = slider.value;
+        }
       }
 
       function addMarkers(e) {

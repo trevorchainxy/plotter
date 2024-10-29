@@ -78,6 +78,25 @@
         background-color: #2a2a2a;
         cursor: ns-resize;
       }
+
+      /* Toast Styles */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .toast.show {
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
@@ -112,14 +131,26 @@
       </table>
       <input type="file" id="fileInput" accept=".csv" />
       <button onclick="exportCSV()">Export</button>
+      <button onclick="exportArray()">Export (Array)</button>
       <button id="resetButton" onclick="resetMap()">Reset</button>
       <div id="infoBar">0 coords</div>
     </div>
     <div id="map"></div>
+    <div id="toast" class="toast"></div>
 
     <script>
       let map;
       let markers = [];
+
+      function showToast(message, duration = 3000) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, duration);
+      }
 
       function initMap() {
         map = L.map("map", {
@@ -261,6 +292,24 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+      }
+
+      function exportArray() {
+        const coordsArray = markers.map((marker) => {
+          const latlng = marker.getLatLng();
+          return [latlng.lat, latlng.lng];
+        });
+
+        const arrayString = JSON.stringify(coordsArray);
+        navigator.clipboard
+          .writeText(arrayString)
+          .then(() => {
+            showToast("Coordinates copied to clipboard!");
+          })
+          .catch((err) => {
+            console.error("Failed to copy coordinates:", err);
+            showToast("Failed to copy coordinates to clipboard", 3000);
+          });
       }
 
       function importCSV(event) {

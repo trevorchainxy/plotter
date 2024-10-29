@@ -74,7 +74,6 @@
       .slider-table input[type="range"] {
         width: 100%;
       }
-      /* Add hover state for slider rows to indicate scrollable */
       .slider-table tr:hover {
         background-color: #2a2a2a;
         cursor: ns-resize;
@@ -125,13 +124,25 @@
       function initMap() {
         map = L.map("map", {
           center: [0, 0],
-          zoom: 2,
+          zoom: 3,
           preferCanvas: true,
+          worldCopyJump: false,
+          maxBounds: [
+            [-90, -180],
+            [90, 180],
+          ],
+          minZoom: 2,
+          maxBoundsViscosity: 1.0,
         });
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap contributors",
           maxZoom: 19,
+          noWrap: true,
+          bounds: [
+            [-90, -180],
+            [90, 180],
+          ],
         }).addTo(map);
 
         map.on("click", addMarkers);
@@ -141,7 +152,6 @@
           .getElementById("fileInput")
           .addEventListener("change", importCSV);
 
-        // Add wheel event listeners to slider rows
         setupWheelControl("radiusSlider");
         setupWheelControl("granularitySlider");
 
@@ -162,12 +172,11 @@
         const row = slider.closest("tr");
 
         row.addEventListener("wheel", function (e) {
-          e.preventDefault(); // Prevent page scrolling
+          e.preventDefault();
 
-          const step = e.deltaY > 0 ? -50 : 50; // Adjust step size as needed
+          const step = e.deltaY > 0 ? -50 : 50;
           let newValue = parseInt(slider.value) + step;
 
-          // Ensure value stays within bounds
           newValue = Math.max(
             parseInt(slider.min),
             Math.min(parseInt(slider.max), newValue)

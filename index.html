@@ -55,6 +55,9 @@
       #resetButton {
         background-color: #f5424292;
       }
+      #unbatchedButton {
+        background-color: #666666;
+      }
       .slider-table {
         width: 25%;
         border-collapse: collapse;
@@ -77,6 +80,9 @@
       .slider-table tr:hover {
         background-color: #2a2a2a;
         cursor: ns-resize;
+      }
+      .selected-row {
+        background-color: #2a2a2a;
       }
 
       /* Toast Styles */
@@ -133,6 +139,7 @@
       <button onclick="exportCSV()">Export</button>
       <button onclick="exportArray()">Export (Array)</button>
       <button id="resetButton" onclick="resetMap()">Reset</button>
+      <button id="unbatchedButton" onclick="setUnbatched()">Unbatched</button>
       <div id="infoBar">0 coords</div>
     </div>
     <div id="map"></div>
@@ -142,6 +149,41 @@
       let map;
       let markers = [];
 
+      document.addEventListener("keydown", (e) => {
+        let delta = 0;
+
+        switch (e.key) {
+          case "ArrowRight":
+            delta = 1;
+            break;
+          case "ArrowLeft":
+            delta = -1;
+            break;
+          case "ArrowUp":
+            delta = 10;
+            break;
+          case "ArrowDown":
+            delta = -10;
+            break;
+          default:
+            return;
+        }
+
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.type === "range") {
+          e.preventDefault();
+          const newValue = Math.max(
+            parseInt(activeElement.min),
+            Math.min(
+              parseInt(activeElement.max),
+              parseInt(activeElement.value) + delta
+            )
+          );
+          activeElement.value = newValue;
+          updateValue(activeElement.id);
+        }
+      });
+
       function showToast(message, duration = 3000) {
         const toast = document.getElementById("toast");
         toast.textContent = message;
@@ -150,6 +192,17 @@
         setTimeout(() => {
           toast.classList.remove("show");
         }, duration);
+      }
+
+      function setUnbatched() {
+        const radiusSlider = document.getElementById("radiusSlider");
+        const granularitySlider = document.getElementById("granularitySlider");
+
+        radiusSlider.value = 1;
+        granularitySlider.value = 1;
+
+        updateValue("radiusSlider");
+        updateValue("granularitySlider");
       }
 
       function initMap() {
